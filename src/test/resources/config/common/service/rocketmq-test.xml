@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+	<bean id="todoConsumerListener"	class="com.simon.credit.service.rocketmq.TodoConsumerListener" />
+
+	<bean id="consumer" class="com.simon.credit.service.rocketmq.MQConsumer" init-method="start" destroy-method="shutdown">
+		<!--consumerGroup clustering_group_default -->
+		<constructor-arg value="test_consumer_group_loan_lms_todo" index="0" />
+		<!-- topic -->
+		<constructor-arg value="test_topic_loan_lms_todo" index="1" />
+		<!-- topic's subExpression -->
+		<constructor-arg value="*" index="2" />
+		<property name="consumeFromWhere" ref="CONSUME_FROM_FIRST_OFFSET" />
+		<property name="consumeListener" ref="todoConsumerListener" />
+		<!--集群模式，默认为集群消费，不需要配置 -->
+		<!--<property name="messageModel" ref="CLUSTERING"/> -->
+	</bean>
+
+	<import resource="classpath:config/common/service/common-service.xml" />
+
+</beans>

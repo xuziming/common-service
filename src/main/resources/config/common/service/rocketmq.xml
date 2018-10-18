@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/context 
+	http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+	<bean id="CONSUME_FROM_FIRST_OFFSET" class="org.springframework.beans.factory.config.FieldRetrievingFactoryBean">
+		<property name="staticField" value="com.alibaba.rocketmq.common.consumer.ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET" />
+	</bean>
+
+	<bean id="BROADCASTING"	class="org.springframework.beans.factory.config.FieldRetrievingFactoryBean">
+		<property name="staticField" value="com.alibaba.rocketmq.common.protocol.heartbeat.MessageModel.BROADCASTING" />
+	</bean>
+
+	<bean id="CLUSTERING" class="org.springframework.beans.factory.config.FieldRetrievingFactoryBean">
+		<property name="staticField" value="com.alibaba.rocketmq.common.protocol.heartbeat.MessageModel.CLUSTERING" />
+	</bean>
+
+	<bean id="producer" class="com.simon.credit.service.rocketmq.MQProducerImpl" lazy-init="true" init-method="start" destroy-method="shutdown">
+		<constructor-arg value="clustering_group_default" index="0" />
+		<!-- <property name="namesrvAddr" value="127.0.0.1:9876" /> -->
+	</bean>
+</beans>
