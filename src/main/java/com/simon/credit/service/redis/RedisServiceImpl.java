@@ -1,5 +1,7 @@
 package com.simon.credit.service.redis;
 
+import java.util.Map;
+
 import redis.clients.jedis.ShardedJedis;
 import redis.clients.jedis.ShardedJedisPool;
 
@@ -50,6 +52,21 @@ public class RedisServiceImpl implements RedisService {
 	}
 
 	/**
+	 * 执行hash set操作
+	 * @param key
+	 * @param field hash数据结构名
+	 * @param value
+	 * @return
+	 */
+	public Long hset(final String key, final String field, final String value) {
+		return execute(new RedisCallback<Long, ShardedJedis>() {
+			public Long callback(ShardedJedis e) {
+				return e.hset(key, field, value);
+			}
+		});
+	}
+
+	/**
 	 * 执行set操作，同时设置生存时间，单位为：秒
 	 * @param key
 	 * @param value
@@ -80,6 +97,20 @@ public class RedisServiceImpl implements RedisService {
 	}
 
 	/**
+	 * 执行hash get操作
+	 * @param key 
+	 * @param field hash数据结构名
+	 * @return
+	 */
+	public String hget(final String key, final String field) {
+		return execute(new RedisCallback<String, ShardedJedis>() {
+			public String callback(ShardedJedis e) {
+				return e.hget(key, field);
+			}
+		});
+	}
+
+	/**
 	 * 执行删除操作
 	 * @param key
 	 * @return
@@ -102,6 +133,36 @@ public class RedisServiceImpl implements RedisService {
 		return execute(new RedisCallback<Long, ShardedJedis>() {
 			public Long callback(ShardedJedis e) {
 				return e.expire(key, seconds.intValue());
+			}
+		});
+	}
+
+	/**
+	 * 判断hash是否包含指定key
+	 * @param key
+	 * @param field hash数据结构名
+	 * @return
+	 */
+	@Override
+	public Boolean hexists(final String key, final String field) {
+		return execute(new RedisCallback<Boolean, ShardedJedis>() {
+			public Boolean callback(ShardedJedis e) {
+				return e.hexists(key, field);
+			}
+		});
+	}
+
+	/**
+	 * 执行hash multi set操作
+	 * @param key
+	 * @param field hash数据结构名
+	 * @return
+	 */
+	@Override
+	public String hmset(final String key, final Map<String, String> hash) {
+		return execute(new RedisCallback<String, ShardedJedis>() {
+			public String callback(ShardedJedis e) {
+				return e.hmset(key, hash);
 			}
 		});
 	}
