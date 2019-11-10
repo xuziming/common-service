@@ -12,12 +12,14 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.simon.credit.service.DistributeLock;
+
 /**
  * 分布式锁(基于APACHE CURATOR分布式锁进行二次封装)
  * @author XUZIMING 2017-11-16
  */
-public class CuratorDistributeLock implements DistributeLock {
-	private static final Logger LOGGER = LoggerFactory.getLogger(CuratorDistributeLock.class);
+public class ZooKeeperDistributeLock implements DistributeLock {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ZooKeeperDistributeLock.class);
 
 	/** 加锁最大等待时间, 超时则加锁失败 */
 	private static final int LOCK_MAX_WAIT = 15000;
@@ -31,7 +33,7 @@ public class CuratorDistributeLock implements DistributeLock {
 	/** 分布式锁路径 */
 	private String path;
 
-	public CuratorDistributeLock(String path) {
+	public ZooKeeperDistributeLock(String path) {
 		this.path = path;
 		LOGGER.debug("=== lock state: {}", client == null ? "" : client.getState());
 		if (client != null && client.getState() == CuratorFrameworkState.STARTED) {
@@ -60,7 +62,7 @@ public class CuratorDistributeLock implements DistributeLock {
 	}
 
 	@Override
-	public void unlock() {
+	public void realseLock() {
 		if (lock == null) {
 			return;
 		}

@@ -1,4 +1,4 @@
-package com.simon.credit.service.zookeeper;
+package com.simon.credit.service;
 
 import java.util.concurrent.TimeUnit;
 
@@ -23,8 +23,8 @@ public interface DistributeLock {
 	boolean tryLock();
 
 	/**
-	 * 解锁
+	 * 释放锁
 	 */
-	void unlock();
+	void realseLock();
 
 }
