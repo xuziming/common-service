@@ -7,9 +7,9 @@ import com.simon.credit.service.DistributeLock;
 import redis.clients.jedis.ShardedJedis;
 
 public class RedisDistributeLock implements DistributeLock {
-	private static final long LOCK_TIMEOUT = 3000;
-
+	/** 分片jedis */
 	private ShardedJedis jedis;
+
 	/** 锁的名字 */
 	private String lockKey;
 
@@ -51,7 +51,7 @@ public class RedisDistributeLock implements DistributeLock {
 
 	@Override
 	public boolean tryLock() {
-		return tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+		return tryLock(LOCK_MAX_WAIT_SECONDS, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -74,7 +74,7 @@ public class RedisDistributeLock implements DistributeLock {
 		// 当前时间
 		long currentTime = System.currentTimeMillis();
 		// 设置锁的持续时间
-		String lockTimeDuration = String.valueOf(currentTime + LOCK_TIMEOUT);
+		String lockTimeDuration = String.valueOf(currentTime + TimeUnit.SECONDS.toMillis(LOCK_MAX_WAIT_SECONDS));
 		Long result = jedis.setnx(lockKey, lockTimeDuration);
 
 		if (result == 1) {

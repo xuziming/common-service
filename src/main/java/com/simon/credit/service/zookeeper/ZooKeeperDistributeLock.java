@@ -21,9 +21,6 @@ import com.simon.credit.service.DistributeLock;
 public class ZooKeeperDistributeLock implements DistributeLock {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ZooKeeperDistributeLock.class);
 
-	/** 加锁最大等待时间, 超时则加锁失败 */
-	private static final int LOCK_MAX_WAIT = 15000;
-
 	/** ZK客户端 */
 	private static CuratorFramework client;
 
@@ -58,7 +55,7 @@ public class ZooKeeperDistributeLock implements DistributeLock {
 
 	@Override
 	public boolean tryLock() {
-		return tryLock(LOCK_MAX_WAIT, TimeUnit.MILLISECONDS);
+		return tryLock(LOCK_MAX_WAIT_SECONDS, TimeUnit.SECONDS);
 	}
 
 	@Override
