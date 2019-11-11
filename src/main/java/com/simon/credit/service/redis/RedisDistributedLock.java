@@ -2,19 +2,23 @@ package com.simon.credit.service.redis;
 
 import java.util.concurrent.TimeUnit;
 
-import com.simon.credit.service.DistributeLock;
+import com.simon.credit.service.DistributedLock;
 
 import redis.clients.jedis.ShardedJedis;
 
-public class RedisDistributeLock implements DistributeLock {
+/**
+ * Redis分布式锁
+ * @author XUZIMING 2019-11-10
+ */
+public class RedisDistributedLock implements DistributedLock {
 	/** 分片jedis */
-	private ShardedJedis jedis;
+	private ShardedJedis shardedJedis;
 
 	/** 锁的名字 */
 	private String lockKey;
 
-	public RedisDistributeLock(ShardedJedis jedis, String lockKey) {
-		this.jedis = jedis;
+	public RedisDistributedLock(ShardedJedis shardedJedis, String lockKey) {
+		this.shardedJedis = shardedJedis;
 		this.lockKey = lockKey;
 	}
 
@@ -37,7 +41,7 @@ public class RedisDistributeLock implements DistributeLock {
 				}
 
 				// 判断上一把锁是否超时,获取到锁则返回true;否则休眠0.1秒，降低服务器压力
-				if (innerTryLock(lockKey)) {
+				if (doTryLock(lockKey)) {
 					return true;
 				} else {
 					Thread.sleep(100);
@@ -60,52 +64,51 @@ public class RedisDistributeLock implements DistributeLock {
 	@Override
 	public void realseLock() {
 		// 如果当前时间已经超过 超时时间，则释放锁
-		if (!checkIfLockTimeout(System.currentTimeMillis(), lockKey)) {
-			jedis.del(lockKey);
+		if (!isLockTimeout(lockKey)) {
+			shardedJedis.del(lockKey);
 		}
 	}
 
 	/**
-	 * 内部获取锁的实现方法
+	 * 获取锁的实现方法
 	 * @param lockKey 锁的名字
 	 * @return
 	 */
-	private boolean innerTryLock(String lockKey) {
+	private boolean doTryLock(String lockKey) {
 		// 当前时间
 		long currentTime = System.currentTimeMillis();
 		// 设置锁的持续时间
 		String lockTimeDuration = String.valueOf(currentTime + TimeUnit.SECONDS.toMillis(LOCK_MAX_WAIT_SECONDS));
-		Long result = jedis.setnx(lockKey, lockTimeDuration);
+		Long result = shardedJedis.setnx(lockKey, lockTimeDuration);
 
-		if (result == 1) {
+		if (result == 1) {// 说明在调用setnx设置lockKey时, lockKey不存在
 			return true;
 		}
 
-		// result != 1;说明加锁不成功
-		if (checkIfLockTimeout(currentTime, lockKey)) {// 检查加锁是否超出限定时间
-			// 之前加锁成功时设置的锁定时间
-			String preLockTimeDuration = jedis.getSet(lockKey, lockTimeDuration);
+		// result != 1;说明加锁不成功(其它程序在占用着锁资源，这时需要检查锁是否超时)
+		if (isLockTimeout(lockKey)) {
+			// 之前加锁成功时设置的锁定时间段
+			String preLockTimeDuration = shardedJedis.getSet(lockKey, lockTimeDuration);
 			// 当前时间大于之前的锁的限定时间, 说明锁已经超时
 			if (currentTime > Long.valueOf(preLockTimeDuration)) {
 				return true;
 			}
 		}
 
-		return false;
+		return false;// 被其它程序占用的锁没有超时，加锁失败
 	}
 
 	/**
 	 * 判断加锁是否超时
-	 * @param currentTime 当前时间
-	 * @param lockKey     锁的名字
+	 * @param lockKey 锁的名字
 	 * @return
 	 */
-	private boolean checkIfLockTimeout(Long currentTime, String lockKey) {
-		if (!jedis.exists(lockKey)) {
+	private boolean isLockTimeout(String lockKey) {
+		if (!shardedJedis.exists(lockKey)) {
 			return true;
 		}
 		// 如果当前时间超过锁的持续时间，则默认之前的锁已经失效，返回true
-		return currentTime > Long.valueOf(jedis.get(lockKey));
+		return System.currentTimeMillis() > Long.valueOf(shardedJedis.get(lockKey));
 	}
 
 }

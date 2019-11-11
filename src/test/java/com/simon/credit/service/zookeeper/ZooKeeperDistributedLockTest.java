@@ -2,10 +2,10 @@ package com.simon.credit.service.zookeeper;
 
 import java.util.concurrent.TimeUnit;
 
-import com.simon.credit.service.DistributeLock;
-import com.simon.credit.service.zookeeper.ZooKeeperDistributeLock.ClientInitializer;
+import com.simon.credit.service.DistributedLock;
+import com.simon.credit.service.zookeeper.ZooKeeperDistributedLock.ClientInitializer;
 
-public class ZooKeeperDistributeLockTest {
+public class ZooKeeperDistributedLockTest {
 
 	public static void main(String[] args) {
 		ClientInitializer clientInitializer = new ClientInitializer("zookeeper://127.0.0.1:2181", "credit");
@@ -16,10 +16,10 @@ public class ZooKeeperDistributeLockTest {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					DistributeLock distributeLock = new ZooKeeperDistributeLock("/riskman");
+					DistributedLock distributedLock = new ZooKeeperDistributedLock("/riskman");
 					try {
 						// 判断是否获取了锁
-						boolean getLock = distributeLock.tryLock(3, TimeUnit.SECONDS);
+						boolean getLock = distributedLock.tryLock(3, TimeUnit.SECONDS);
 						if (getLock) {
 							// 此处可以开始写需要实现的代码
 							System.out.println(index + " 获取到锁...");
@@ -32,7 +32,7 @@ public class ZooKeeperDistributeLockTest {
 					} finally {
 						// 判断是否超时了，如果未超时，则释放锁。
 						// 超时了，锁有可能被其他线程拿走了，就不做任何操作
-						distributeLock.realseLock();
+						distributedLock.realseLock();
 					}
 				}
 			}).start();

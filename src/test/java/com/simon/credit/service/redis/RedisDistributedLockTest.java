@@ -4,13 +4,13 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.simon.credit.service.DistributeLock;
+import com.simon.credit.service.DistributedLock;
 
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisShardInfo;
 import redis.clients.jedis.ShardedJedisPool;
 
-public class RedisDistributeLockTest {
+public class RedisDistributedLockTest {
 
 	private static final String LOCK_KEY = "lock_credit_risk";
 
@@ -25,10 +25,10 @@ public class RedisDistributeLockTest {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					DistributeLock distributeLock = new RedisDistributeLock(shardedJedisPool.getResource(), LOCK_KEY);
+					DistributedLock distributedLock = new RedisDistributedLock(shardedJedisPool.getResource(), LOCK_KEY);
 					try {
 						// 判断是否获取了锁
-						boolean getLock = distributeLock.tryLock(3, TimeUnit.SECONDS);
+						boolean getLock = distributedLock.tryLock(3, TimeUnit.SECONDS);
 						if (getLock) {
 							// 此处可以开始写需要实现的代码
 							System.out.println(index + " 获取到锁...");
@@ -41,7 +41,7 @@ public class RedisDistributeLockTest {
 					} finally {
 						// 判断是否超时了，如果未超时，则释放锁。
 						// 超时了，锁有可能被其他线程拿走了，就不做任何操作
-						distributeLock.realseLock();
+						distributedLock.realseLock();
 						latch.countDown();
 					}
 				}

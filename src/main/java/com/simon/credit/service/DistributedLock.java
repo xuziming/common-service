@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
  * 分布式锁
  * @author XUZIMING 2017-11-16
  */
-public interface DistributeLock {
+public interface DistributedLock {
 
 	/** 加锁最大等待时间(默认为3秒), 超时则加锁失败 */
 	int LOCK_MAX_WAIT_SECONDS = 3;

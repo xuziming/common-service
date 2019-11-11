@@ -4,7 +4,7 @@ package com.simon.credit.service.zookeeper;
  * 分布式锁路径建造器
  * @author XUZIMING 2019-10-25
  */
-public class DistributeLockPathBuilder {
+public class ZooKeeperDistributedLockPathBuilder {
 
 	/**
 	 * 解析分布式锁路径
@@ -17,8 +17,8 @@ public class DistributeLockPathBuilder {
 	}
 
 	public static void main(String[] args) {
-		String distributeLockPath = DistributeLockPathBuilder.build("whitelistCheck", "checkWhitelistBatch1");
-		System.out.println(distributeLockPath);
+		String lockPath = ZooKeeperDistributedLockPathBuilder.build("whitelistCheck", "checkWhitelistBatch1");
+		System.out.println(lockPath);
 	}
 
 }
