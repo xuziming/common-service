@@ -9,7 +9,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.rocketmq.client.producer.SendResult;
 import com.alibaba.rocketmq.common.message.Message;
 
-public class ProducterTest extends BaseTest {
+public class ProducerTest extends BaseTest {
 
 	@Autowired
 	private MQProducer producer;

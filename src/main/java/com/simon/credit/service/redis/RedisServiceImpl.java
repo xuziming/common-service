@@ -32,7 +32,8 @@ public class RedisServiceImpl implements RedisService {
 		} finally {
 			if (shardedJedis != null) {
 				// 关闭资源，检测连接是否有效，有效则放回到连接池中，无效则重置状态
-				shardedJedis.close();
+				// shardedJedis.close();
+				shardedJedisPool.returnResourceObject(shardedJedis);
 			}
 		}
 	}

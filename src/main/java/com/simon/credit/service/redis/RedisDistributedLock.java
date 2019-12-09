@@ -33,7 +33,7 @@ public class RedisDistributedLock implements DistributedLock {
 			// 获取当前系统时间作为：开始加锁的时间
 			Long tryLockStartTime = System.currentTimeMillis();
 
-			// 设置一个死循环，不断去获取锁，直接超过设置的 超时时间 为止
+			// 设置一个死循环，不断去获取锁，直接超过设置的超时时间为止
 			for (;;) {
 				// 当前时间超过了设定的超时时间，循环终止
 				if (System.currentTimeMillis() - tryLockStartTime > waitUnit.toMillis(maxWait)) {
@@ -63,7 +63,7 @@ public class RedisDistributedLock implements DistributedLock {
 	 */
 	@Override
 	public void realseLock() {
-		// 如果当前时间已经超过 超时时间，则释放锁
+		// 如果当前时间已经超过超时时间，则释放锁
 		if (!isLockTimeout(lockKey)) {
 			shardedJedis.del(lockKey);
 		}
