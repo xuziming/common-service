@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.simon.credit.service.DistributedLock;
 
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.ShardedJedis;
 
 /**
@@ -11,14 +12,21 @@ import redis.clients.jedis.ShardedJedis;
  * @author XUZIMING 2019-11-10
  */
 public class RedisDistributedLock implements DistributedLock {
-	/** 分片jedis */
-	private ShardedJedis shardedJedis;
 
-	/** 锁的名字 */
+	private JedisWrapper jedisWrapper;
+
 	private String lockKey;
 
-	public RedisDistributedLock(ShardedJedis shardedJedis, String lockKey) {
-		this.shardedJedis = shardedJedis;
+	public RedisDistributedLock(Jedis jedis, String lockKey) {
+		this(JedisWrapper.wrap(jedis, null), lockKey);
+	}
+
+	public RedisDistributedLock(ShardedJedis sharedJedis, String lockKey) {
+		this(JedisWrapper.wrap(null, sharedJedis), lockKey);
+	}
+
+	public RedisDistributedLock(JedisWrapper jedisWrapper, String lockKey) {
+		this.jedisWrapper = jedisWrapper;
 		this.lockKey = lockKey;
 	}
 
@@ -65,7 +73,7 @@ public class RedisDistributedLock implements DistributedLock {
 	public void realseLock() {
 		// 如果当前时间已经超过超时时间，则释放锁
 		if (!isLockTimeout(lockKey)) {
-			shardedJedis.del(lockKey);
+			jedisWrapper.del(lockKey);
 		}
 	}
 
@@ -79,7 +87,7 @@ public class RedisDistributedLock implements DistributedLock {
 		long currentTime = System.currentTimeMillis();
 		// 设置锁的持续时间
 		String lockTimeDuration = String.valueOf(currentTime + TimeUnit.SECONDS.toMillis(LOCK_MAX_WAIT_SECONDS));
-		Long result = shardedJedis.setnx(lockKey, lockTimeDuration);
+		Long result = jedisWrapper.setnx(lockKey, lockTimeDuration);
 
 		if (result == 1) {// 说明在调用setnx设置lockKey时, lockKey不存在
 			return true;
@@ -88,7 +96,7 @@ public class RedisDistributedLock implements DistributedLock {
 		// result != 1;说明加锁不成功(其它程序在占用着锁资源，这时需要检查锁是否超时)
 		if (isLockTimeout(lockKey)) {
 			// 之前加锁成功时设置的锁定时间段
-			String preLockTimeDuration = shardedJedis.getSet(lockKey, lockTimeDuration);
+			String preLockTimeDuration = jedisWrapper.getSet(lockKey, lockTimeDuration);
 			// 当前时间大于之前的锁的限定时间, 说明锁已经超时
 			if (currentTime > Long.valueOf(preLockTimeDuration)) {
 				return true;
@@ -104,11 +112,48 @@ public class RedisDistributedLock implements DistributedLock {
 	 * @return
 	 */
 	private boolean isLockTimeout(String lockKey) {
-		if (!shardedJedis.exists(lockKey)) {
+		if (!jedisWrapper.exists(lockKey)) {
 			return true;
 		}
 		// 如果当前时间超过锁的持续时间，则默认之前的锁已经失效，返回true
-		return System.currentTimeMillis() > Long.valueOf(shardedJedis.get(lockKey));
+		return System.currentTimeMillis() > Long.valueOf(jedisWrapper.get(lockKey));
+	}
+
+	static final class JedisWrapper {
+		private Jedis jedis;
+		private ShardedJedis sharedJedis;
+
+		public static JedisWrapper wrap(Jedis jedis, ShardedJedis sharedJedis) {
+			return new JedisWrapper(jedis, sharedJedis);
+		}
+
+		public JedisWrapper(Jedis jedis, ShardedJedis sharedJedis) {
+			if (jedis == null && sharedJedis == null) {
+				throw new IllegalArgumentException("jedis or sharedJedis can not be all null.");
+			}
+			this.jedis = jedis;
+			this.sharedJedis = sharedJedis;
+		}
+
+		public Boolean exists(String key) {
+			return jedis != null ? jedis.exists(key) : sharedJedis.exists(key);
+		}
+
+		public String get(String key) {
+			return jedis != null ? jedis.get(key) : sharedJedis.get(key);
+		}
+
+		public String getSet(String key, String value) {
+			return jedis != null ? jedis.getSet(key, value) : sharedJedis.getSet(key, value);
+		}
+
+		public Long setnx(String key, String value) {
+			return jedis != null ? jedis.setnx(key, value) : sharedJedis.setnx(key, value);
+		}
+
+		public Long del(String key) {
+			return jedis != null ? jedis.del(key) : sharedJedis.del(key);
+		}
 	}
 
 }

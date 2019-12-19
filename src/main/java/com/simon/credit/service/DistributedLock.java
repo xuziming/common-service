@@ -20,7 +20,7 @@ public interface DistributedLock {
 	boolean tryLock(long maxWait, TimeUnit waitUnit);
 
 	/**
-	 * 加锁(使用默认等待时间3秒)
+	 * 加锁(使用默认等待时间: 3秒)
 	 * @return true:加锁成功; false:加锁失败
 	 */
 	boolean tryLock();
