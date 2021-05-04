@@ -41,7 +41,7 @@ public class MyRedissonLock extends RedissonBaseLock {
     public void lock() {
         try {
             this.lock(-1L, null, false);
-        } catch (InterruptedException var2) {
+        } catch (InterruptedException e) {
             throw new IllegalStateException();
         }
     }
@@ -49,13 +49,13 @@ public class MyRedissonLock extends RedissonBaseLock {
     public void lock(long leaseTime, TimeUnit unit) {
         try {
             this.lock(leaseTime, unit, false);
-        } catch (InterruptedException var5) {
+        } catch (InterruptedException e) {
             throw new IllegalStateException();
         }
     }
 
     public void lockInterruptibly() throws InterruptedException {
-        this.lock(-1L, (TimeUnit) null, true);
+        this.lock(-1L, null, true);
     }
 
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
@@ -86,9 +86,9 @@ public class MyRedissonLock extends RedissonBaseLock {
                 if (ttl >= 0L) {
                     try {
                         future.getNow().getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
-                    } catch (InterruptedException var13) {
+                    } catch (InterruptedException ie) {
                         if (interruptibly) {
-                            throw var13;
+                            throw ie;
                         }
 
                         future.getNow().getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
@@ -243,11 +243,11 @@ public class MyRedissonLock extends RedissonBaseLock {
     public void unlock() {
         try {
             this.get(this.unlockAsync(Thread.currentThread().getId()));
-        } catch (RedisException var2) {
-            if (var2.getCause() instanceof IllegalMonitorStateException) {
-                throw (IllegalMonitorStateException) var2.getCause();
+        } catch (RedisException e) {
+            if (e.getCause() instanceof IllegalMonitorStateException) {
+                throw (IllegalMonitorStateException) e.getCause();
             } else {
-                throw var2;
+                throw e;
             }
         }
     }
@@ -266,7 +266,7 @@ public class MyRedissonLock extends RedissonBaseLock {
     }
 
     public RFuture<Void> lockAsync() {
-        return this.lockAsync(-1L, (TimeUnit) null);
+        return this.lockAsync(-1L, null);
     }
 
     public RFuture<Void> lockAsync(long leaseTime, TimeUnit unit) {
@@ -314,7 +314,7 @@ public class MyRedissonLock extends RedissonBaseLock {
                     this.unlockAsync(currentThreadId);
                 }
             } else {
-                final RedissonLockEntry entry = (RedissonLockEntry) subscribeFuture.getNow();
+                final RedissonLockEntry entry = subscribeFuture.getNow();
                 if (entry.getLatch().tryAcquire()) {
                     this.lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
                 } else {
@@ -327,11 +327,9 @@ public class MyRedissonLock extends RedissonBaseLock {
                     };
                     entry.addListener(listener);
                     if (ttl >= 0L) {
-                        Timeout scheduledFuture = this.commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
-                            public void run(Timeout timeout) throws Exception {
-                                if (entry.removeListener(listener)) {
-                                    MyRedissonLock.this.lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
-                                }
+                        Timeout scheduledFuture = this.commandExecutor.getConnectionManager().newTimeout(timeout -> {
+                            if (entry.removeListener(listener)) {
+                                MyRedissonLock.this.lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
                             }
                         }, ttl, TimeUnit.MILLISECONDS);
                         futureRef.set(scheduledFuture);
