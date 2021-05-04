@@ -1,9 +1,9 @@
 package com.simon.credit.service.redis;
 
-import java.util.Map;
-
 import redis.clients.jedis.ShardedJedis;
 import redis.clients.jedis.ShardedJedisPool;
+
+import java.util.Map;
 
 /**
  * REDIS操作服务
@@ -156,7 +156,7 @@ public class RedisServiceImpl implements RedisService {
 	/**
 	 * 执行hash multi set操作
 	 * @param key
-	 * @param field hash数据结构名
+	 * @param hash hash数据结构名
 	 * @return
 	 */
 	@Override
