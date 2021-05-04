@@ -1,7 +1,6 @@
 package com.simon.credit.service.lock;
 
 import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.RedissonBaseLock;
 import org.redisson.RedissonLockEntry;
 import org.redisson.api.RFuture;
@@ -113,7 +112,8 @@ public class MyRedissonLock extends RedissonBaseLock {
             return this.tryLockInnerAsync(waitTime, leaseTime, unit, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         }
 
-        RFuture<Boolean> ttlRemainingFuture = this.tryLockInnerAsync(waitTime, this.internalLockLeaseTime, TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
+        RFuture<Boolean> ttlRemainingFuture = this.tryLockInnerAsync(waitTime,
+            internalLockLeaseTime, TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         ttlRemainingFuture.onComplete((ttlRemaining, e) -> {
             if (e == null && ttlRemaining) {
                 this.scheduleExpirationRenewal(threadId);
@@ -258,11 +258,31 @@ public class MyRedissonLock extends RedissonBaseLock {
 
     public RFuture<Boolean> forceUnlockAsync() {
         this.cancelExpirationRenewal(null);
-        return this.evalWriteAsync(this.getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN, "if (redis.call('del', KEYS[1]) == 1) then redis.call('publish', KEYS[2], ARGV[1]); return 1 else return 0 end", Arrays.asList(this.getName(), this.getChannelName()), new Object[]{LockPubSub.UNLOCK_MESSAGE});
+        String script = "if  (redis.call('del', KEYS[1]) == 1) " +
+                        "then redis.call('publish', KEYS[2], ARGV[1]); " +
+                        "return 1 " +
+                        "else return 0 " +
+                        "end";
+        return this.evalWriteAsync(this.getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN, script,
+                Arrays.asList(this.getName(), this.getChannelName()), new Object[]{LockPubSub.UNLOCK_MESSAGE});
     }
 
     protected RFuture<Boolean> unlockInnerAsync(long threadId) {
-        return this.evalWriteAsync(this.getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN, "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then return nil;end; local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); if (counter > 0) then redis.call('pexpire', KEYS[1], ARGV[2]); return 0; else redis.call('del', KEYS[1]); redis.call('publish', KEYS[2], ARGV[1]); return 1; end; return nil;", Arrays.asList(this.getName(), this.getChannelName()), new Object[]{LockPubSub.UNLOCK_MESSAGE, this.internalLockLeaseTime, this.getLockName(threadId)});
+        String script = "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) " +
+                        "   then return nil; " +
+                        "end; " +
+                        "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
+                        "if (counter > 0) " +
+                        "   then redis.call('pexpire', KEYS[1], ARGV[2]); " +
+                        "   return 0; " +
+                        "else redis.call('del', KEYS[1]); " +
+                        "   redis.call('publish', KEYS[2], ARGV[1]); " +
+                        "   return 1; " +
+                        "end; " +
+                        "return nil;";
+        List<Object> keys = Arrays.asList(this.getName(), this.getChannelName());
+        Object[] params = {LockPubSub.UNLOCK_MESSAGE, this.internalLockLeaseTime, this.getLockName(threadId)};
+        return this.evalWriteAsync(this.getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN, script, keys, params);
     }
 
     public RFuture<Void> lockAsync() {
@@ -321,7 +341,7 @@ public class MyRedissonLock extends RedissonBaseLock {
                     AtomicReference<Timeout> futureRef = new AtomicReference();
                     final Runnable listener = () -> {
                         if (futureRef.get() != null) {
-                            ((Timeout) futureRef.get()).cancel();
+                            futureRef.get().cancel();
                         }
                         this.lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
                     };
@@ -392,12 +412,10 @@ public class MyRedissonLock extends RedissonBaseLock {
                         }
                     });
                     if (!subscribeFuture.isDone()) {
-                        Timeout scheduledFuture = this.commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
-                            public void run(Timeout timeout) throws Exception {
-                                if (!subscribeFuture.isDone()) {
-                                    subscribeFuture.cancel(false);
-                                    MyRedissonLock.this.trySuccessFalse(currentThreadId, result);
-                                }
+                        Timeout scheduledFuture = this.commandExecutor.getConnectionManager().newTimeout(timeout -> {
+                            if (!subscribeFuture.isDone()) {
+                                subscribeFuture.cancel(false);
+                                MyRedissonLock.this.trySuccessFalse(currentThreadId, result);
                             }
                         }, time.get(), TimeUnit.MILLISECONDS);
                         futureRef.set(scheduledFuture);
@@ -418,7 +436,9 @@ public class MyRedissonLock extends RedissonBaseLock {
         });
     }
 
-    private void tryLockAsync(AtomicLong time, long waitTime, long leaseTime, TimeUnit unit, RFuture<RedissonLockEntry> subscribeFuture, RPromise<Boolean> result, long currentThreadId) {
+    private void tryLockAsync(AtomicLong time, long waitTime, long leaseTime, TimeUnit unit,
+        RFuture<RedissonLockEntry> subscribeFuture, RPromise<Boolean> result, long currentThreadId) {
+
         if (result.isDone()) {
             this.unsubscribe(subscribeFuture, currentThreadId);
         } else if (time.get() <= 0L) {
@@ -437,8 +457,8 @@ public class MyRedissonLock extends RedissonBaseLock {
                         this.unlockAsync(currentThreadId);
                     }
                 } else {
-                    long el = System.currentTimeMillis() - curr;
-                    time.addAndGet(-el);
+                    long elapsedTime = System.currentTimeMillis() - curr;
+                    time.addAndGet(-elapsedTime);
                     if (time.get() <= 0L) {
                         this.unsubscribe(subscribeFuture, currentThreadId);
                         this.trySuccessFalse(currentThreadId, result);
@@ -467,13 +487,11 @@ public class MyRedissonLock extends RedissonBaseLock {
                             }
 
                             if (!executed.get()) {
-                                Timeout scheduledFuture = this.commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
-                                    public void run(Timeout timeout) throws Exception {
-                                        if (entry.removeListener(listener)) {
-                                            long elapsed = System.currentTimeMillis() - current;
-                                            time.addAndGet(-elapsed);
-                                            MyRedissonLock.this.tryLockAsync(time, waitTime, leaseTime, unit, subscribeFuture, result, currentThreadId);
-                                        }
+                                Timeout scheduledFuture = this.commandExecutor.getConnectionManager().newTimeout(timeout -> {
+                                    if (entry.removeListener(listener)) {
+                                        long elapsed = System.currentTimeMillis() - current;
+                                        time.addAndGet(-elapsed);
+                                        MyRedissonLock.this.tryLockAsync(time, waitTime, leaseTime, unit, subscribeFuture, result, currentThreadId);
                                     }
                                 }, t, TimeUnit.MILLISECONDS);
                                 futureRef.set(scheduledFuture);
