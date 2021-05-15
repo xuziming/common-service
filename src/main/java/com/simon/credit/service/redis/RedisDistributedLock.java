@@ -91,7 +91,8 @@ public class RedisDistributedLock implements DistributedLock {
 		String lockTimeDuration = String.valueOf(currentTime + LOCK_MAX_WAIT_MILLISECONDS);
 		Long result = jedisWrapper.setnx(lockKey, lockTimeDuration);
 
-		if (result == 1) {// 说明在调用setnx设置lockKey时, lockKey不存在
+		// 说明在调用setnx设置lockKey时, lockKey不存在
+		if (result == 1) {
 			return true;
 		}
 
@@ -105,7 +106,8 @@ public class RedisDistributedLock implements DistributedLock {
 			}
 		}
 
-		return false;// 被其它程序占用的锁没有超时，加锁失败
+		// 被其它程序占用的锁没有超时，加锁失败
+		return false;
 	}
 
 	/**
