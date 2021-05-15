@@ -9,7 +9,10 @@ import java.util.concurrent.TimeUnit;
 public interface DistributedLock {
 
 	/** 加锁最大等待时间(默认为3秒), 超时则加锁失败 */
-	int LOCK_MAX_WAIT_SECONDS = 3;
+	long LOCK_MAX_WAIT_SECONDS = 3L;
+
+	/** 加锁最大等待时间(默认为3000毫秒), 超时则加锁失败 */
+	long LOCK_MAX_WAIT_MILLISECONDS = TimeUnit.SECONDS.toMillis(LOCK_MAX_WAIT_SECONDS);
 
 	/**
 	 * 加锁

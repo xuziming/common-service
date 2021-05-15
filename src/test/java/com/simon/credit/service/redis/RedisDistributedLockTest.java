@@ -28,11 +28,11 @@ public class RedisDistributedLockTest {
 					DistributedLock lock = new RedisDistributedLock(shardedJedisPool.getResource(), LOCK_KEY);
 					try {
 						// 判断是否获取了锁
-						boolean getLock = lock.tryLock(3, TimeUnit.SECONDS);
+						boolean getLock = lock.tryLock(20, TimeUnit.SECONDS);
 						if (getLock) {
 							// 此处可以开始写需要实现的代码
 							System.out.println(index + " 获取到锁...");
-							TimeUnit.SECONDS.sleep(1);
+							TimeUnit.SECONDS.sleep(10);
 						} else {
 							System.out.println(index + " 超时获取不到锁...");
 						}
@@ -43,6 +43,7 @@ public class RedisDistributedLockTest {
 						// 超时了，锁有可能被其他线程拿走了，就不做任何操作
 						lock.realseLock();
 						latch.countDown();
+						System.out.println(index + " 释放锁...");
 					}
 				}
 			}).start();
@@ -56,8 +57,8 @@ public class RedisDistributedLockTest {
 		JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
 		jedisPoolConfig.setMaxTotal(1024);
 
-		JedisShardInfo jedisShardInfo = new JedisShardInfo("192.168.183.128", 6379);
-		jedisShardInfo.setPassword("redis123456");
+		JedisShardInfo jedisShardInfo = new JedisShardInfo("192.168.67.129", 6379);
+		jedisShardInfo.setPassword("DevFtqw1206F");
 
 		return new ShardedJedisPool(jedisPoolConfig, Arrays.asList(jedisShardInfo));
 	}

@@ -36,22 +36,24 @@ public class RedisDistributedLock implements DistributedLock {
 	 * @param waitUnit 最大等待时间单位
 	 * @return true:加锁成功; false:加锁失败
 	 */
+	@Override
 	public boolean tryLock(long maxWait, TimeUnit waitUnit) {
 		try {
-			// 获取当前系统时间作为：开始加锁的时间
-			Long tryLockStartTime = System.currentTimeMillis();
+			// 获取锁截止时间
+			Long tryLockDeadline = System.currentTimeMillis() + waitUnit.toMillis(maxWait);
 
-			// 设置一个死循环，不断去获取锁，直接超过设置的超时时间为止
+			// 循环不断去获取锁，直至超过设置的超时时间为止
 			for (;;) {
 				// 当前时间超过了设定的超时时间，循环终止
-				if (System.currentTimeMillis() - tryLockStartTime > waitUnit.toMillis(maxWait)) {
+				if (System.currentTimeMillis() >= tryLockDeadline) {
 					break;
 				}
 
-				// 判断上一把锁是否超时,获取到锁则返回true;否则休眠0.1秒，降低服务器压力
+				// 判断上一把锁是否超时,获取到锁则返回true
 				if (doTryLock(lockKey)) {
 					return true;
 				} else {
+					// 获取不到锁时休眠0.1秒，降低服务器压力
 					Thread.sleep(100);
 				}
 			}
@@ -79,14 +81,14 @@ public class RedisDistributedLock implements DistributedLock {
 
 	/**
 	 * 获取锁的实现方法
-	 * @param lockKey 锁的名字
+	 * @param lockKey 锁键
 	 * @return
 	 */
 	private boolean doTryLock(String lockKey) {
 		// 当前时间
 		long currentTime = System.currentTimeMillis();
 		// 设置锁的持续时间
-		String lockTimeDuration = String.valueOf(currentTime + TimeUnit.SECONDS.toMillis(LOCK_MAX_WAIT_SECONDS));
+		String lockTimeDuration = String.valueOf(currentTime + LOCK_MAX_WAIT_MILLISECONDS);
 		Long result = jedisWrapper.setnx(lockKey, lockTimeDuration);
 
 		if (result == 1) {// 说明在调用setnx设置lockKey时, lockKey不存在
@@ -108,7 +110,7 @@ public class RedisDistributedLock implements DistributedLock {
 
 	/**
 	 * 判断加锁是否超时
-	 * @param lockKey 锁的名字
+	 * @param lockKey 锁键
 	 * @return
 	 */
 	private boolean isLockTimeout(String lockKey) {

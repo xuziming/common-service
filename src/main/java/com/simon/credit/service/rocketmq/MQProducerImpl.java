@@ -12,7 +12,7 @@ import com.alibaba.rocketmq.common.message.Message;
 
 @Service
 public class MQProducerImpl extends DefaultMQProducer implements MQProducer {
-	private static final Logger logger = LoggerFactory.getLogger(MQProducerImpl.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MQProducerImpl.class);
 
 	public MQProducerImpl() {}
 
@@ -20,24 +20,27 @@ public class MQProducerImpl extends DefaultMQProducer implements MQProducer {
 		super(producerGroup);
 	}
 
+	@Override
 	public void start() {
 		try {
 			super.start();
 
 		} catch (MQClientException e) {
-			logger.error("start producer error", e);
+			LOGGER.error("start producer error", e);
 		}
 	}
 
+	@Override
 	public SendResult sendMessage(Message msg) {
 		try {
 			return send(msg);
 		} catch (Exception e) {
-			logger.error("send message error", e);
+			LOGGER.error("send message error", e);
 			return null;
 		}
 	}
 
+	@Override
 	public void sendAsyncMessage(Message msg, final IMessageCallback callback) {
 		try {
 			send(msg, new SendCallback() {
@@ -48,22 +51,19 @@ public class MQProducerImpl extends DefaultMQProducer implements MQProducer {
 
 				@Override
 				public void onException(Throwable e) {
-					logger.error("async send message callback error", e);
+					LOGGER.error("async send message callback error", e);
 				}
 			});
 		} catch (Exception e) {
-			logger.error("async send message error", e);
+			LOGGER.error("async send message error", e);
 		}
 	}
 
 	@Override
 	public void sendAsyncMessage(Message msg) {
-		sendAsyncMessage(msg, new IMessageCallback() {
-			@Override
-			public void callback(SendResult result) {
-				if (logger.isInfoEnabled()) {
-					logger.info("async send message success! message:" + result.toString());
-				}
+		sendAsyncMessage(msg, result -> {
+			if (LOGGER.isInfoEnabled()) {
+				LOGGER.info("async send message success! message:" + result.toString());
 			}
 		});
 	}

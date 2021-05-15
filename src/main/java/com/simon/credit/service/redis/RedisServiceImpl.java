@@ -1,9 +1,9 @@
 package com.simon.credit.service.redis;
 
-import java.util.Map;
-
 import redis.clients.jedis.ShardedJedis;
 import redis.clients.jedis.ShardedJedisPool;
+
+import java.util.Map;
 
 /**
  * REDIS操作服务
@@ -20,7 +20,7 @@ public class RedisServiceImpl implements RedisService {
 	/**
 	 * redis通用执行方法(回调模式)<br>
 	 * 二次封装redis: 将redis的资源获取、关闭等操作进行封装，从而使调用代码更简洁
-	 * @param redisCallback REDIS回调
+	 * @param redisCallback redis回调
 	 * @return
 	 */
 	private <T> T execute(RedisCallback<T, ShardedJedis> redisCallback) {
@@ -44,27 +44,21 @@ public class RedisServiceImpl implements RedisService {
 	 * @param value
 	 * @return
 	 */
+	@Override
 	public String set(final String key, final String value) {
-		return execute(new RedisCallback<String, ShardedJedis>() {
-			public String callback(ShardedJedis e) {
-				return e.set(key, value);
-			}
-		});
+		return execute(e -> e.set(key, value));
 	}
 
 	/**
 	 * 执行hash set操作
 	 * @param key
-	 * @param field hash数据结构名
+	 * @param hash Hash数据结构名
 	 * @param value
 	 * @return
 	 */
-	public Long hset(final String key, final String field, final String value) {
-		return execute(new RedisCallback<Long, ShardedJedis>() {
-			public Long callback(ShardedJedis e) {
-				return e.hset(key, field, value);
-			}
-		});
+	@Override
+	public Long hset(final String key, final String hash, final String value) {
+		return execute(e -> e.hset(key, hash, value));
 	}
 
 	/**
@@ -74,13 +68,12 @@ public class RedisServiceImpl implements RedisService {
 	 * @param seconds
 	 * @return
 	 */
+	@Override
 	public String set(final String key, final String value, final Integer seconds) {
-		return execute(new RedisCallback<String, ShardedJedis>() {
-			public String callback(ShardedJedis e) {
-				String str = e.set(key, value);
-				e.expire(key, seconds.intValue());
-				return str;
-			}
+		return execute(e -> {
+			String str = e.set(key, value);
+			e.expire(key, seconds.intValue());
+			return str;
 		});
 	}
 
@@ -89,26 +82,20 @@ public class RedisServiceImpl implements RedisService {
 	 * @param key
 	 * @return
 	 */
+	@Override
 	public String get(final String key) {
-		return execute(new RedisCallback<String, ShardedJedis>() {
-			public String callback(ShardedJedis e) {
-				return e.get(key);
-			}
-		});
+		return execute(e -> e.get(key));
 	}
 
 	/**
 	 * 执行hash get操作
 	 * @param key 
-	 * @param field hash数据结构名
+	 * @param hash Hash数据结构名
 	 * @return
 	 */
-	public String hget(final String key, final String field) {
-		return execute(new RedisCallback<String, ShardedJedis>() {
-			public String callback(ShardedJedis e) {
-				return e.hget(key, field);
-			}
-		});
+	@Override
+	public String hget(final String key, final String hash) {
+		return execute(e -> e.hget(key, hash));
 	}
 
 	/**
@@ -116,56 +103,42 @@ public class RedisServiceImpl implements RedisService {
 	 * @param key
 	 * @return
 	 */
+	@Override
 	public Long del(final String key) {
-		return execute(new RedisCallback<Long, ShardedJedis>() {
-			public Long callback(ShardedJedis e) {
-				return e.del(key);
-			}
-		});
+		return execute(e -> e.del(key));
 	}
 
 	/**
 	 * 设置生存时间，单位为：秒
 	 * @param key
-	 * @param seconds
+	 * @param seconds 超时时间(单位：秒)
 	 * @return
 	 */
+	@Override
 	public Long expire(final String key, final Integer seconds) {
-		return execute(new RedisCallback<Long, ShardedJedis>() {
-			public Long callback(ShardedJedis e) {
-				return e.expire(key, seconds.intValue());
-			}
-		});
+		return execute(e -> e.expire(key, seconds.intValue()));
 	}
 
 	/**
 	 * 判断hash是否包含指定key
 	 * @param key
-	 * @param field hash数据结构名
+	 * @param hash Hash数据结构名
 	 * @return
 	 */
 	@Override
-	public Boolean hexists(final String key, final String field) {
-		return execute(new RedisCallback<Boolean, ShardedJedis>() {
-			public Boolean callback(ShardedJedis e) {
-				return e.hexists(key, field);
-			}
-		});
+	public Boolean hexists(final String key, final String hash) {
+		return execute(e -> e.hexists(key, hash));
 	}
 
 	/**
 	 * 执行hash multi set操作
 	 * @param key
-	 * @param field hash数据结构名
+	 * @param hash Hash数据结构名
 	 * @return
 	 */
 	@Override
 	public String hmset(final String key, final Map<String, String> hash) {
-		return execute(new RedisCallback<String, ShardedJedis>() {
-			public String callback(ShardedJedis e) {
-				return e.hmset(key, hash);
-			}
-		});
+		return execute(e -> e.hmset(key, hash));
 	}
 
 }

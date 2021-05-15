@@ -8,6 +8,7 @@ import com.alibaba.rocketmq.common.message.Message;
 
 public class TodoConsumerListener implements ConsumeListener {
 
+	@Override
 	public boolean consume(Message message) {
 		String msg = new String(message.getBody());
 
