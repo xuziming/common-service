@@ -35,7 +35,7 @@ public class RedisDistributedBizLock implements DistributedBizLock {
 			}
 		} catch (Exception e) {
 			LOGGER.error(e.getMessage(), e);
-			throw new RuntimeException("分布式锁业务执行出错");
+			throw new RuntimeException("分布式锁业务执行出错", e);
 		} finally {
 			if (lock.isLocked() && lock.isHeldByCurrentThread()) {
 				lock.unlock();

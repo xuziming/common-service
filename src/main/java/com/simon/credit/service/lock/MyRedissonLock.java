@@ -128,6 +128,7 @@ public class MyRedissonLock extends RedissonBaseLock {
         }
 
         RFuture<Long> ttlRemainingFuture = this.tryLockInnerAsync(waitTime, this.internalLockLeaseTime, TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_LONG);
+        /** 过期续租 */
         ttlRemainingFuture.onComplete((ttlRemaining, e) -> {
             if (e == null && ttlRemaining == null) {
                 this.scheduleExpirationRenewal(threadId);
@@ -160,6 +161,14 @@ public class MyRedissonLock extends RedissonBaseLock {
         return this.evalWriteAsync(this.getName(), LongCodec.INSTANCE, command, script, keys, params);
     }
 
+    /**
+     * 尝试获得锁
+     * @param waitTime
+     * @param leaseTime
+     * @param unit
+     * @return
+     * @throws InterruptedException
+     */
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
         long time = unit.toMillis(waitTime);
         long current = System.currentTimeMillis();
