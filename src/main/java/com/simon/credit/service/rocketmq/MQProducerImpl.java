@@ -1,14 +1,13 @@
 package com.simon.credit.service.rocketmq;
 
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.client.producer.SendCallback;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.common.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import com.alibaba.rocketmq.client.exception.MQClientException;
-import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
-import com.alibaba.rocketmq.client.producer.SendCallback;
-import com.alibaba.rocketmq.client.producer.SendResult;
-import com.alibaba.rocketmq.common.message.Message;
 
 @Service
 public class MQProducerImpl extends DefaultMQProducer implements MQProducer {
@@ -23,8 +22,8 @@ public class MQProducerImpl extends DefaultMQProducer implements MQProducer {
 	@Override
 	public void start() {
 		try {
+			super.setNamesrvAddr("127.0.0.1:9876");
 			super.start();
-
 		} catch (MQClientException e) {
 			LOGGER.error("start producer error", e);
 		}

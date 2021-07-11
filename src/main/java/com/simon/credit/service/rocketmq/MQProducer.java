@@ -1,7 +1,7 @@
 package com.simon.credit.service.rocketmq;
 
-import com.alibaba.rocketmq.client.producer.SendResult;
-import com.alibaba.rocketmq.common.message.Message;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.common.message.Message;
 
 public interface MQProducer {
 

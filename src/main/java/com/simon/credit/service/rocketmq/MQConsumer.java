@@ -1,21 +1,29 @@
 package com.simon.credit.service.rocketmq;
 
+import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
+import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
+import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.message.MessageExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.alibaba.rocketmq.client.consumer.DefaultMQPushConsumer;
-import com.alibaba.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
-import com.alibaba.rocketmq.client.consumer.listener.MessageListenerConcurrently;
-import com.alibaba.rocketmq.client.exception.MQClientException;
-import com.alibaba.rocketmq.common.message.MessageExt;
 
 public class MQConsumer extends DefaultMQPushConsumer {
     private static final Logger LOGGER = LoggerFactory.getLogger(MQConsumer.class.getName());
 
+    public MQConsumer(final String consumerGroup, final String topic, final String subExpression) {
+        super(consumerGroup);
+
+        try {
+            super.subscribe(topic, subExpression);
+        } catch (MQClientException e) {
+            LOGGER.error("subcribe topic failure", e);
+        }
+    }
+
     @Override
     public void start() {
         try {
-            // super.setNamesrvAddr("127.0.0.1:9876");
             super.start();
         } catch (MQClientException e) {
             LOGGER.error("start consumer error", e);
@@ -40,15 +48,5 @@ public class MQConsumer extends DefaultMQPushConsumer {
 			}
 		});
 	}
-
-    public MQConsumer(final String consumerGroup, final String topic, final String subExpression) {
-        super(consumerGroup);
-
-        try {
-            super.subscribe(topic, subExpression);
-        } catch (MQClientException e) {
-            LOGGER.error("subcribe topic failure", e);
-        }
-    }
 
 }
